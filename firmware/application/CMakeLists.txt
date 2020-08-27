@@ -271,6 +271,7 @@ set(CPPSRC
 	protocols/lcr.cpp
 	protocols/modems.cpp
 	protocols/rds.cpp
+	protocols/wspr.cpp
 	# ui_handwrite.cpp
 	# ui_loadmodule.cpp
 	# ui_numbers.cpp
