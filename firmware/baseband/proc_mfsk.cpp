@@ -19,19 +19,21 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <string>
+#include "proc_mfsk.hpp"
+#include "portapack_shared_memory.hpp"
+#include "sine_table_int8.hpp"
+#include "event_m4.hpp"
 
-#ifndef __WSPR_H__
-#define __WSPR_H__
+#include <cstdint>
 
-namespace wspr {
+void MFSKProcessor::execute(const buffer_c8_t& buffer) {
+}
 
-#define WSPR_MESSAGE_COUNT		11
-#define WSPR_SYMBOL_COUNT    	162
-#define WSPR_BIT_COUNT       	162
-	
-void encode(const std::string& callsign, const std::string& log, const uint8_t dbm, uint8_t * symbols);
+void MFSKProcessor::on_message(const Message* const p) {
+}
 
-} /* namespace wspr */
-
-#endif/*__WSPR_H__*/
+int main() {
+	EventDispatcher event_dispatcher { std::make_unique<MFSKProcessor>() };
+	event_dispatcher.run();
+	return 0;
+}

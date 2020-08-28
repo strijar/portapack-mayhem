@@ -251,6 +251,7 @@ set(CPPSRC
 	apps/ui_touchtunes.cpp
 	apps/ui_view_wav.cpp
 	apps/ui_whipcalc.cpp
+	apps/ui_wspr.cpp
 	apps/acars_app.cpp
 	apps/ais_app.cpp
 	apps/analog_audio_app.cpp
@@ -272,6 +273,7 @@ set(CPPSRC
 	protocols/modems.cpp
 	protocols/rds.cpp
 	protocols/wspr.cpp
+	protocols/digi.cpp
 	# ui_handwrite.cpp
 	# ui_loadmodule.cpp
 	# ui_numbers.cpp

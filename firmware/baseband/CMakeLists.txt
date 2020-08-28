@@ -381,6 +381,13 @@ set(MODE_CPPSRC
 )
 DeclareTargets(PFSK fsktx)
 
+### MFSK
+
+set(MODE_CPPSRC
+	proc_mfsk.cpp
+)
+DeclareTargets(PMFT mfsk)
+
 ### Jammer
 
 set(MODE_CPPSRC

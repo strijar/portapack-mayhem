@@ -19,19 +19,36 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <string>
+#ifndef __PROC_MFSK_H__
+#define __PROC_MFSK_H__
 
-#ifndef __WSPR_H__
-#define __WSPR_H__
+#include "baseband_processor.hpp"
+#include "baseband_thread.hpp"
 
-namespace wspr {
+#define MFSK_SAMPLERATE (12000*256)
 
-#define WSPR_MESSAGE_COUNT		11
-#define WSPR_SYMBOL_COUNT    	162
-#define WSPR_BIT_COUNT       	162
+class MFSKProcessor : public BasebandProcessor {
+public:
+	void execute(const buffer_c8_t& buffer) override;
 	
-void encode(const std::string& callsign, const std::string& log, const uint8_t dbm, uint8_t * symbols);
+	void on_message(const Message* const p) override;
 
-} /* namespace wspr */
+private:
+	bool configured = false;
+	
+	BasebandThread baseband_thread { MFSK_SAMPLERATE, this, NORMALPRIO + 20, baseband::Direction::Transmit };
+	
+	uint32_t samples_per_bit { 0 };
+	uint32_t length { 0 };
+	
+    uint32_t shift_zero { }, shift_one { };
+    uint32_t bit_pos { 0 };
+    uint32_t progress_notice { }, progress_count { 0 };
+    uint8_t cur_bit { 0 };
+    uint32_t sample_count { 0 };
+	uint32_t phase { 0 }, sphase { 0 };
+	
+	TXProgressMessage txprogress_message { };
+};
 
-#endif/*__WSPR_H__*/
+#endif

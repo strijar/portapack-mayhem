@@ -66,6 +66,7 @@
 #include "ui_touchtunes.hpp"
 #include "ui_view_wav.hpp"
 #include "ui_whipcalc.hpp"
+#include "ui_wspr.hpp"
 
 #include "acars_app.hpp"
 #include "ais_app.hpp"
@@ -472,6 +473,7 @@ TransmittersMenuView::TransmittersMenuView(NavigationView& nav) {
 		{ "LGE tool", 		ui::Color::yellow(),	&bitmap_icon_lge,		[&nav](){ nav.push<LGEView>(); } },
 		{ "Mic",			ui::Color::green(),		&bitmap_icon_microphone,[&nav](){ nav.push<MicTXView>(); } },
 		{ "Morse",			ui::Color::green(),		&bitmap_icon_morse,		[&nav](){ nav.push<MorseView>(); } },
+		{ "WSPR",			ui::Color::green(),		&bitmap_icon_morse,		[&nav](){ nav.push<WSPRView>(); } },
 		{ "BurgerPgr",		ui::Color::yellow(), 	&bitmap_icon_burger,	[&nav](){ nav.push<CoasterPagerView>(); } },
 		//{ "Nuoptix DTMF", 	ui::Color::green(),		&bitmap_icon_nuoptix,	[&nav](){ nav.push<NuoptixView>(); } },
 		{ "OOK",			ui::Color::yellow(),	&bitmap_icon_remote,	[&nav](){ nav.push<EncodersView>(); } },

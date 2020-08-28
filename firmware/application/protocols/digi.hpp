@@ -19,19 +19,13 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <string>
+#ifndef __DIGI_H__
+#define __DIGI_H__
 
-#ifndef __WSPR_H__
-#define __WSPR_H__
+namespace digi {
 
-namespace wspr {
+void convolve(uint8_t * c, uint8_t * s, uint8_t message_size, uint8_t bit_size);
 
-#define WSPR_MESSAGE_COUNT		11
-#define WSPR_SYMBOL_COUNT    	162
-#define WSPR_BIT_COUNT       	162
-	
-void encode(const std::string& callsign, const std::string& log, const uint8_t dbm, uint8_t * symbols);
+} /* namespace digi */
 
-} /* namespace wspr */
-
-#endif/*__WSPR_H__*/
+#endif/*__DIGI_H__*/
