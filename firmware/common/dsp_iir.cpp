@@ -55,3 +55,20 @@ void IIRBiquadFilter::execute(const buffer_f32_t& buffer_in, const buffer_f32_t&
 void IIRBiquadFilter::execute_in_place(const buffer_f32_t& buffer) {
 	execute(buffer, buffer);
 }
+
+void IIRBiquadDF2Filter::configure(const iir_biquad_df2_config_t& config) {
+	b_0 = config[0] / config[3];
+	b_1 = config[1] / config[3];
+	b_2 = config[2] / config[3];
+	a_1 = config[4] / config[3];
+	a_2 = config[5] / config[3];
+}
+
+float IIRBiquadDF2Filter::execute(float value) {
+	float w_2 = w_1;
+  
+	w_1 = w_0;
+	w_0 = value - a_1 * w_1 - a_2 * w_2;
+
+	return b_0 * w_0 + b_1 * w_1 + b_2 * w_2;
+}
