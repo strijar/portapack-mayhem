@@ -114,6 +114,7 @@ set(CPPSRC
 	dsp_decimate.cpp
 	dsp_demodulate.cpp
 	dsp_hilbert.cpp
+	dsp_modulate.cpp
 	dsp_goertzel.cpp
 	matched_filter.cpp
 	spectrum_collector.cpp
