@@ -27,6 +27,7 @@
 #include "baseband_thread.hpp"
 #include "audio_input.hpp"
 #include "tone_gen.hpp"
+#include "dsp_modulate.hpp"
 
 class MicTXProcessor : public BasebandProcessor {
 public:
@@ -50,6 +51,7 @@ private:
 	AudioInput audio_input { };
 	ToneGen tone_gen { };
 	ToneGen beep_gen { };
+	dsp::modulate::Modulator *modulator;
 	
 	uint32_t divider { };
 	float audio_gain { };

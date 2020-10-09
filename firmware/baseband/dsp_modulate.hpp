@@ -40,7 +40,7 @@ enum class Mode {
 
 class Modulator {
 public:
-	virtual void execute(int32_t sample, int8_t &re, int8_t &im) = 0;
+	virtual void execute(const buffer_s16_t& audio, const buffer_c8_t& buffer) = 0;
 	virtual ~Modulator();
 
 	Mode get_mode();
@@ -56,7 +56,7 @@ class AM : public Modulator {
 public:
 	AM();
 
-	virtual void execute(int32_t sample, int8_t &re, int8_t &im);
+	virtual void execute(const buffer_s16_t& audio, const buffer_c8_t& buffer);
 
 private:
 	dsp::HilbertTransform	hilbert;
@@ -68,7 +68,7 @@ class FM : public Modulator {
 public:
 	FM();
 
-	virtual void execute(int32_t sample, int8_t &re, int8_t &im);
+	virtual void execute(const buffer_s16_t& audio, const buffer_c8_t& buffer);
 	void set_fm_delta(uint32_t new_delta);
 
 private:

@@ -57,18 +57,27 @@ void IIRBiquadFilter::execute_in_place(const buffer_f32_t& buffer) {
 }
 
 void IIRBiquadDF2Filter::configure(const iir_biquad_df2_config_t& config) {
-	b_0 = config[0] / config[3];
-	b_1 = config[1] / config[3];
-	b_2 = config[2] / config[3];
-	a_1 = config[4] / config[3];
-	a_2 = config[5] / config[3];
+	b0 = config[0] / config[3];
+	b1 = config[1] / config[3];
+	b2 = config[2] / config[3];
+	a1 = config[4] / config[3];
+	a2 = config[5] / config[3];
 }
 
-float IIRBiquadDF2Filter::execute(float value) {
-	float w_2 = w_1;
-  
-	w_1 = w_0;
-	w_0 = value - a_1 * w_1 - a_2 * w_2;
+//  scipy.signal.sosfilt
+//
+//  x_n = x[i, n]  # make a temporary copy
+//  # Use direct II transposed structure:
+//  x[i, n] = b[s, 0] * x_n + zi[i, s, 0]
+//  zi[i, s, 0] = (b[s, 1] * x_n - a[s, 0] * x[i, n] + zi[i, s, 1])
+//  zi[i, s, 1] = (b[s, 2] * x_n - a[s, 1] * x[i, n])
 
-	return b_0 * w_0 + b_1 * w_1 + b_2 * w_2;
+float IIRBiquadDF2Filter::execute(float x) {
+	float y;
+	
+	y = b0 * x + z0;
+	z0 = b1 * x - a1 * y + z1;
+	z1 = b2 * x - a2 * y;
+
+	return y;
 }

@@ -74,17 +74,17 @@ class IIRBiquadDF2Filter {
 public:
 
 	void configure(const iir_biquad_df2_config_t& config);
-	float execute(float value);
+	float execute(float z);
 
 private:
-	float b_0 = 0;
-	float b_1 = 0;
-	float b_2 = 0;
-	float a_1 = 0;
-	float a_2 = 0;
+	float b0 = 0;
+	float b1 = 0;
+	float b2 = 0;
+	float a1 = 0;
+	float a2 = 0;
 
-	float w_0 = 0;
-	float w_1 = 0;
+	float z0 = 0;
+	float z1 = 0;
 };
 
 #endif/*__DSP_IIR_H__*/

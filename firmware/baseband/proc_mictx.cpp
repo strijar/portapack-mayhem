@@ -35,6 +35,7 @@ void MicTXProcessor::execute(const buffer_c8_t& buffer){
 	if (!configured) return;
 	
 	audio_input.read_audio_buffer(audio_buffer);
+	modulator->execute(audio_buffer, buffer);
 
 	for (size_t i = 0; i < buffer.count; i++) {
 		
@@ -70,6 +71,7 @@ void MicTXProcessor::execute(const buffer_c8_t& buffer){
 			sample = beep_gen.process(0);
 		}
 		
+		/*
 		sample = tone_gen.process(sample);
 		
 		// FM
@@ -87,6 +89,7 @@ void MicTXProcessor::execute(const buffer_c8_t& buffer){
 		}
 		
 		buffer.p[i] = { re, im };
+		*/
 	}
 }
 
@@ -96,7 +99,17 @@ void MicTXProcessor::on_message(const Message* const msg) {
 	
 	switch(msg->id) {
 		case Message::ID::AudioTXConfig:
-			fm_delta = config_message.deviation_hz * (0xFFFFFFUL / baseband_fs);
+			if (0) {
+				dsp::modulate::FM *fm = new dsp::modulate::FM();
+				
+				fm->set_fm_delta(config_message.deviation_hz * (0xFFFFFFUL / baseband_fs));
+				modulator = fm;
+			}
+			
+			if (1) {
+				modulator = new dsp::modulate::AM();
+				modulator->set_mode(dsp::modulate::Mode::USB);
+			}
 			
 			audio_gain = config_message.audio_gain;
 			divider = config_message.divider;
