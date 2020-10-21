@@ -36,29 +36,31 @@ void Modulator::set_mode(Mode new_mode) {
 	mode = new_mode;
 }
 
-///
-
-AM::AM() : hilbert() {
-	mode = Mode::DSB;
+void Modulator::set_over(uint32_t new_over) {
+    over = new_over;
 }
 
-void AM::execute(const buffer_s16_t& audio, const buffer_c8_t& buffer) {
-	uint32_t	over = 64;
-	int16_t		*audio_ptr = audio.p;
+///
+
+SSB::SSB() : hilbert() {
+	mode = Mode::LSB;
+}
+
+void SSB::execute(const buffer_s16_t& audio, const buffer_c8_t& buffer) {
+	int32_t		sample = 0;
 	int8_t		re = 0, im = 0;
 	
 	for (size_t counter = 0; counter < buffer.count; counter++) {
 		if (counter % over == 0) {
-			int32_t	sample = audio.p[counter / over];
 			float	i = 0.0, q = 0.0;
 
+		    sample = audio.p[counter / over];
 			hilbert.execute(sample / 32768.0f, i, q);
 	
 			i *= 127.0f;
 			q *= 127.0f;
 	
 			switch (mode) {
-				case Mode::DSB:		re = i + q;	im = i + q;		break;
 				case Mode::LSB:		re = q;		im = i;			break;
 				case Mode::USB:		re = i;		im = q;			break;
 				default:			re = 0;		im = 0;			break;
@@ -80,15 +82,13 @@ void FM::set_fm_delta(uint32_t new_delta) {
 }
 
 void FM::execute(const buffer_s16_t& audio, const buffer_c8_t& buffer) {
-	uint32_t	over = buffer.count / audio.count;
-	int16_t		*audio_ptr = audio.p;
 	int32_t		sample = 0;
 	int8_t		re, im;
 
 	for (size_t counter = 0; counter < buffer.count; counter++) {
 		if (counter % over == 0) {
-			sample = (*audio_ptr++) >> 8;
-			delta = sample * fm_delta;
+		    sample = audio.p[counter / over] >> 8;
+		    delta = sample * fm_delta;
 		}
 
 		phase += delta;

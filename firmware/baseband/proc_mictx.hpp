@@ -52,7 +52,7 @@ private:
 	ToneGen tone_gen { };
 	ToneGen beep_gen { };
 	dsp::modulate::Modulator *modulator;
-	
+
 	uint32_t divider { };
 	float audio_gain { };
 	uint64_t power_acc { 0 };

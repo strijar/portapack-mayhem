@@ -107,9 +107,11 @@ void MicTXProcessor::on_message(const Message* const msg) {
 			}
 			
 			if (1) {
-				modulator = new dsp::modulate::AM();
+				modulator = new dsp::modulate::SSB();
 				modulator->set_mode(dsp::modulate::Mode::USB);
 			}
+
+            modulator->set_over(baseband_fs / 24000);
 			
 			audio_gain = config_message.audio_gain;
 			divider = config_message.divider;

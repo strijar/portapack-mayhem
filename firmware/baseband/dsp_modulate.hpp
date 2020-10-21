@@ -30,7 +30,7 @@ namespace modulate {
 
 enum class Mode {
 	None,
-	DSB,
+	AM,
 	LSB,
 	USB,
 	FM
@@ -46,15 +46,18 @@ public:
 	Mode get_mode();
 	void set_mode(Mode new_mode);
 
+    void set_over(uint32_t new_over);
+
 protected:
-	Mode	mode = Mode::None;
+    uint32_t    over = 1;
+	Mode	    mode = Mode::None;
 };
 
 ///
 
-class AM : public Modulator {
+class SSB : public Modulator {
 public:
-	AM();
+	SSB();
 
 	virtual void execute(const buffer_s16_t& audio, const buffer_c8_t& buffer);
 
