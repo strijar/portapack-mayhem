@@ -37,6 +37,13 @@ set(FIRMWARE_NAME portapack-mayhem-firmware)
 set(FIRMWARE_FILENAME ${FIRMWARE_NAME}.bin)
 set(PPFW_FILENAME "portapack-mayhem_OCI.ppfw.tar")
 
+# Keep the legacy built-in BLE applications out of the SPI image while they
+# are being prepared for conversion to SD-card external applications.
+option(BUILD_LEGACY_BLE_APPS "Build the built-in BLE RX/TX applications" OFF)
+if(BUILD_LEGACY_BLE_APPS)
+	add_compile_definitions(BUILD_LEGACY_BLE_APPS)
+endif()
+
 # In our current build container cmake need a little help to get the version :)
 if(NOT DEFINED ${CMAKE_CXX_COMPILER_VERSION})
 	execute_process(COMMAND bash "-c" "arm-none-eabi-g++ -v 2>&1 | grep 'gcc version' | awk '{print $3}'" OUTPUT_VARIABLE CMAKE_CXX_COMPILER_VERSION)
@@ -168,4 +175,3 @@ add_custom_target(
 	release
 	DEPENDS MD5SUMS SHA256SUMS
 )
-

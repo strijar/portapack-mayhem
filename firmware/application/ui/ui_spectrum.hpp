@@ -83,8 +83,10 @@ class FrequencyScale : public Widget {
     bool on_touch(const TouchEvent touch) override;
 
     void set_spectrum_sampling_rate(const int new_sampling_rate);
-    void set_channel_filter(const int low_frequency, const int high_frequency, const int transition);
+    void set_channel_filter(const int offset, const int low_frequency, const int high_frequency, const int transition);
     void set_cursor_position(const int32_t position);
+    void set_live_tuning(const bool enabled) { live_tuning = enabled; }
+    bool is_live_tuning() const { return live_tuning; }
 
     void paint(Painter& painter) override;
 
@@ -94,9 +96,11 @@ class FrequencyScale : public Widget {
     int32_t cursor_position{0};
     int spectrum_sampling_rate{0};
     const int spectrum_bins = std::tuple_size<decltype(ChannelSpectrum::db)>::value;
+    int channel_filter_offset{0};
     int channel_filter_low_frequency{0};
     int channel_filter_high_frequency{0};
     int channel_filter_transition{0};
+    bool live_tuning{false};
 
     void clear();
     void clear_background(Painter& painter, const Rect r);
@@ -147,6 +151,7 @@ class WaterfallView : public View {
     void set_parent_rect(const Rect new_parent_rect) override;
     void show_audio_spectrum_view(const bool show);
     void load_gradient();
+    void set_live_tuning(const bool enabled) { frequency_scale.set_live_tuning(enabled); }
 
    private:
     void update_widgets_rect();

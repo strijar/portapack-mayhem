@@ -370,17 +370,19 @@ DeclareTargets(PAPR aprsrx)
 
 ### BTLE RX
 
-set(MODE_CPPSRC
-	proc_btlerx.cpp
-)
-DeclareTargets(PBTR btlerx)
+if(BUILD_LEGACY_BLE_APPS)
+	set(MODE_CPPSRC
+		proc_btlerx.cpp
+	)
+	DeclareTargets(PBTR btlerx)
 
-### BTLE TX
+	### BTLE TX
 
-set(MODE_CPPSRC
-	proc_ble_tx.cpp
-)
-DeclareTargets(PBTT btletx)
+	set(MODE_CPPSRC
+		proc_ble_tx.cpp
+	)
+	DeclareTargets(PBTT btletx)
+endif()
 
 ### AIS
 

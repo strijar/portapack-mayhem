@@ -44,6 +44,128 @@ struct fir_taps_complex {
     std::array<complex16_t, N> taps;
 };
 
+/*
+ * Sliding Audio RX wide-band channelizer.
+ *
+ * 3.072MHz -> 768kHz: pass 100kHz, stop 600kHz, decimate by 4.
+ * The wide transition is intentional: after the following stage only the
+ * central 192kHz is retained, so aliases outside that region are harmless.
+ */
+constexpr fir_taps_real<24> taps_audio_wide_decim_0{
+    .low_frequency_normalized = -100000.0f / 3072000.0f,
+    .high_frequency_normalized = 100000.0f / 3072000.0f,
+    .transition_normalized = 500000.0f / 3072000.0f,
+    .taps = {{
+        -2, -27, -108, -263, -448, -519, -250, 565,
+        1966, 3724, 5372, 6373, 6373, 5372, 3724, 1966,
+        565, -250, -519, -448, -263, -108, -27, -2,
+    }},
+};
+
+/*
+ * 3.072MHz -> 768kHz Audio RX front-end. The first alias that can fold
+ * into the useful +/-80kHz band starts at 688kHz.
+ */
+constexpr fir_taps_real<20> taps_audio_wide_sparse_decim_0{
+    .low_frequency_normalized = -80000.0f / 3072000.0f,
+    .high_frequency_normalized = 80000.0f / 3072000.0f,
+    .transition_normalized = 608000.0f / 3072000.0f,
+    .taps = {{
+        20, 6, -132, -426, -666, -367, 953, 3304, 5958, 7734,
+        7734, 5958, 3304, 953, -367, -666, -426, -132, 6, 20,
+    }},
+};
+
+/*
+ * 768kHz -> 192kHz display front-end: pass 80kHz, stop 96kHz.
+ * Quantized response is approximately 0.08dB ripple and 69dB stop-band.
+ */
+constexpr fir_taps_real<160> taps_audio_wide_decim_1{
+    .low_frequency_normalized = -80000.0f / 768000.0f,
+    .high_frequency_normalized = 80000.0f / 768000.0f,
+    .transition_normalized = 16000.0f / 768000.0f,
+    .taps = {{
+        -10, -5, 2, 16, 33, 47, 51, 40, 15, -15, -39, -44, -27, 7, 43, 63,
+        54, 16, -37, -78, -86, -51, 15, 83, 118, 97, 24, -71, -142, -151,
+        -83, 36, 151, 204, 159, 28, -133, -246, -246, -121, 80, 264, 335,
+        242, 16, -244, -410, -385, -161, 171, 455, 539, 357, -30, -447, -685,
+        -601, -198, 359, 804, 894, 533, -156, -866, -1235, -1016, -226, 827,
+        1645, 1754, 941, -590, -2225, -3135, -2582, -241, 3610, 8120, 12103,
+        14436, 14436, 12103, 8120, 3610, -241, -2582, -3135, -2225, -590, 941,
+        1754, 1645, 827, -226, -1016, -1235, -866, -156, 533, 894, 804, 359,
+        -198, -601, -685, -447, -30, 357, 539, 455, 171, -161, -385, -410,
+        -244, 16, 242, 335, 264, 80, -121, -246, -246, -133, 28, 159, 204,
+        151, 36, -83, -151, -142, -71, 24, 97, 118, 83, 15, -51, -86, -78,
+        -37, 16, 54, 63, 43, 7, -27, -44, -39, -15, 15, 40, 51, 47, 33,
+        16, 2, -5, -10,
+    }},
+};
+
+/*
+ * 768kHz -> 384kHz half-band prefilter. The broad 80...304kHz
+ * transition makes this stage inexpensive while protecting the useful band.
+ */
+constexpr fir_taps_real<16> taps_audio_wide_halfband_0{
+    .low_frequency_normalized = -80000.0f / 768000.0f,
+    .high_frequency_normalized = 80000.0f / 768000.0f,
+    .transition_normalized = 224000.0f / 768000.0f,
+    .taps = {{
+        -171, 0, 1144, 0, -4481, 0, 19892, 32767,
+        19892, 0, -4481, 0, 1144, 0, -171, 0,
+    }},
+};
+
+/*
+ * 384kHz -> 192kHz half-band display filter: pass 80kHz, stop 112kHz.
+ * Quantized response is approximately 0.004dB ripple and 69dB stop-band.
+ */
+constexpr fir_taps_real<55> taps_audio_wide_halfband_1{
+    .low_frequency_normalized = -80000.0f / 384000.0f,
+    .high_frequency_normalized = 80000.0f / 384000.0f,
+    .transition_normalized = 32000.0f / 384000.0f,
+    .taps = {{
+        -11, 0, 29, 0, -63, 0, 118, 0, -203, 0, 330, 0, -511, 0,
+        767, 0, -1127, 0, 1643, 0, -2426, 0, 3759, 0, -6700, 0,
+        20779, 32767, 20779, 0, -6700, 0, 3759, 0, -2426, 0, 1643, 0,
+        -1127, 0, 767, 0, -511, 0, 330, 0, -203, 0, 118, 0, -63, 0,
+        29, 0, -11,
+    }},
+};
+
+/*
+ * Post-mixer channel selector, 192kHz -> 48kHz. It preserves every current
+ * AM/NFM mode and rejects the bands that would fold into the central 10kHz.
+ */
+constexpr fir_taps_real<64> taps_audio_channel_decim{
+    .low_frequency_normalized = -10000.0f / 192000.0f,
+    .high_frequency_normalized = 10000.0f / 192000.0f,
+    .transition_normalized = 28000.0f / 192000.0f,
+    .taps = {{
+        0, 0, 0, 1, 1, 1, -1, -7, -14, -17, -6, 25, 67, 93, 59, -55,
+        -221, -337, -269, 58, 558, 953, 877, 105, -1202, -2406, -2571, -906,
+        2748, 7654, 12351, 15225, 15225, 12351, 7654, 2748, -906, -2571, -2406,
+        -1202, 105, 877, 953, 558, 58, -269, -337, -221, -55, 59, 93, 67, 25,
+        -6, -17, -14, -7, -1, 1, 1, 1, 0, 0, 0,
+    }},
+};
+
+/* 192kHz -> 96kHz anti-alias filter used only by Audio RX ZOOM x2. */
+constexpr fir_taps_real<96> taps_audio_spectrum_zoom_decim{
+    .low_frequency_normalized = -40000.0f / 192000.0f,
+    .high_frequency_normalized = 40000.0f / 192000.0f,
+    .transition_normalized = 8000.0f / 192000.0f,
+    .taps = {{
+        5, 24, 30, 3, -30, -16, 35, 37, -34, -64, 21, 94, 9, -121, -57, 137,
+        122, -131, -202, 94, 286, -18, -362, -102, 412, 265, -417, -464, 355,
+        685, -205, -906, -49, 1096, 425, -1216, -934, 1218, 1599, -1032, -2462,
+        543, 3654, 532, -5660, -3333, 11713, 27190, 27190, 11713, -3333, -5660,
+        532, 3654, 543, -2462, -1032, 1599, 1218, -934, -1216, 425, 1096, -49,
+        -906, -205, 685, 355, -464, -417, 265, 412, -102, -362, -18, 286, 94,
+        -202, -131, 122, 137, -57, -121, 9, 94, 21, -64, -34, 37, 35, -16,
+        -30, 3, 30, 24, 5,
+    }},
+};
+
 // NBFM 16K0F3E emission type /////////////////////////////////////////////
 
 // IFIR image-reject filter: fs=3072000, pass=8000, stop=344000, decim=8, fout=384000

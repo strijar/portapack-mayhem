@@ -62,8 +62,10 @@
 
 #include "ais_app.hpp"
 #include "analog_audio_app.hpp"
+#ifdef BUILD_LEGACY_BLE_APPS
 #include "ble_rx_app.hpp"
 #include "ble_tx_app.hpp"
+#endif
 #include "capture_app.hpp"
 #include "pocsag_app.hpp"
 
@@ -103,7 +105,9 @@ const NavigationView::AppList NavigationView::appList = {
     {"ais", "AIS Boats", RX, Color::green(), &bitmap_icon_ais, new ViewFactory<AISAppView>()},
     {"aprsrx", "APRS", RX, Color::green(), &bitmap_icon_aprs, new ViewFactory<APRSRXView>()},
     {"audio", "Audio", RX, Color::green(), &bitmap_icon_speaker, new ViewFactory<AnalogAudioView>()},
+#ifdef BUILD_LEGACY_BLE_APPS
     {"blerx", "BLE Rx", RX, Color::green(), &bitmap_icon_btle, new ViewFactory<BLERxView>()},
+#endif
     {"pocsag", "POCSAG", RX, Color::green(), &bitmap_icon_pocsag, new ViewFactory<POCSAGAppView>()},
     {"radiosonde", "Radiosnde", RX, Color::green(), &bitmap_icon_sonde, new ViewFactory<SondeView>()},
     {"search", "Search", RX, Color::yellow(), &bitmap_icon_search, new ViewFactory<SearchView>()},
@@ -111,7 +115,9 @@ const NavigationView::AppList NavigationView::appList = {
     {"weather", "Weather", RX, Color::green(), &bitmap_icon_thermometer, new ViewFactory<WeatherView>()},
     /* TX ********************************************************************/
     {"aprstx", "APRS TX", TX, ui::Color::green(), &bitmap_icon_aprs, new ViewFactory<APRSTXView>()},
+#ifdef BUILD_LEGACY_BLE_APPS
     {"bletx", "BLE Tx", TX, ui::Color::green(), &bitmap_icon_btle, new ViewFactory<BLETxView>()},
+#endif
     {"ooktx", "OOK", TX, ui::Color::yellow(), &bitmap_icon_remote, new ViewFactory<EncodersView>()},
     {"rdstx", "RDS", TX, ui::Color::green(), &bitmap_icon_rds, new ViewFactory<RDSView>()},
     {"touchtune", "TouchTune", TX, ui::Color::green(), &bitmap_icon_touchtunes, new ViewFactory<TouchTunesView>()},

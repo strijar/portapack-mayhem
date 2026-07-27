@@ -148,6 +148,33 @@ class FIRC8xR16x24FS4Decim8 {
     int32_t output_scale = 0;
 };
 
+class SparseFIRC8Decim4 {
+   public:
+    static constexpr size_t decimation_factor = 4;
+
+    template <size_t N>
+    void configure(const std::array<int16_t, N>& taps) {
+        static_assert((N % 2) == 0);
+        samples_i_ = std::make_unique<int16_t[]>(N * 2);
+        samples_q_ = std::make_unique<int16_t[]>(N * 2);
+        taps_ = std::make_unique<int16_t[]>(N);
+        std::reverse_copy(taps.begin(), taps.end(), taps_.get());
+        taps_count_ = N;
+        samples_head_ = 0;
+    }
+
+    buffer_c16_t execute(
+        const buffer_c8_t& src,
+        const buffer_c16_t& dst);
+
+   private:
+    std::unique_ptr<int16_t[]> samples_i_{};
+    std::unique_ptr<int16_t[]> samples_q_{};
+    std::unique_ptr<int16_t[]> taps_{};
+    size_t taps_count_{0};
+    size_t samples_head_{0};
+};
+
 class FIRC16xR16x16Decim2 {
    public:
     static constexpr size_t taps_count = 16;
@@ -210,6 +237,23 @@ class FIRAndDecimateComplex {
         configure(taps.data(), taps.size(), decimation_factor);
     }
 
+    template <size_t N>
+    void configure(
+        const std::array<int16_t, N>& taps,
+        const size_t decimation_factor) {
+        configure_common(N, decimation_factor);
+        for (size_t i = 0; i < N; ++i) {
+            taps_reversed_[i] = {taps[N - 1 - i], 0};
+        }
+    }
+
+    template <size_t N>
+    void set_taps(const std::array<complex16_t, N>& taps) {
+        if (N == taps_count_) {
+            std::reverse_copy(taps.begin(), taps.end(), &taps_reversed_[0]);
+        }
+    }
+
     buffer_c16_t execute(
         const buffer_c16_t& src,
         const buffer_c16_t& dst);
@@ -221,6 +265,7 @@ class FIRAndDecimateComplex {
     std::unique_ptr<taps_t> taps_reversed_{};
     size_t taps_count_{0};
     size_t decimation_factor_{1};
+    size_t samples_head_{0};
 
     template <typename T>
     void configure(
@@ -234,6 +279,42 @@ class FIRAndDecimateComplex {
     void configure_common(
         const size_t taps_count,
         const size_t decimation_factor);
+};
+
+/* Sparse real-tap FIR used by the two half-band stages of Audio RX. */
+class SparseFIRDecimateBy2 {
+   public:
+    template <size_t N>
+    void configure(const std::array<int16_t, N>& taps) {
+        samples_ = std::make_unique<sample_t[]>(N * 2);
+        taps_ = std::make_unique<sample_t[]>(N);
+        indices_ = std::make_unique<uint16_t[]>(N);
+        taps_count_ = N;
+        samples_head_ = 0;
+        sparse_count_ = 0;
+
+        for (size_t i = 0; i < N; ++i) {
+            const auto tap = taps[N - 1 - i];
+            if (tap != 0) {
+                taps_[sparse_count_] = {tap, 0};
+                indices_[sparse_count_++] = i;
+            }
+        }
+    }
+
+    buffer_c16_t execute(
+        const buffer_c16_t& src,
+        const buffer_c16_t& dst);
+
+   private:
+    using sample_t = complex16_t;
+
+    std::unique_ptr<sample_t[]> samples_{};
+    std::unique_ptr<sample_t[]> taps_{};
+    std::unique_ptr<uint16_t[]> indices_{};
+    size_t taps_count_{0};
+    size_t sparse_count_{0};
+    size_t samples_head_{0};
 };
 
 class DecimateBy2CIC4Real {

@@ -88,12 +88,15 @@ void FrequencyScale::set_spectrum_sampling_rate(const int new_sampling_rate) {
 }
 
 void FrequencyScale::set_channel_filter(
+    const int offset,
     const int low_frequency,
     const int high_frequency,
     const int transition) {
-    if ((channel_filter_low_frequency != low_frequency) ||
+    if ((channel_filter_offset != offset) ||
+        (channel_filter_low_frequency != low_frequency) ||
         (channel_filter_high_frequency != high_frequency) ||
         (channel_filter_transition != transition)) {
+        channel_filter_offset = offset;
         channel_filter_low_frequency = low_frequency;
         channel_filter_high_frequency = high_frequency;
         channel_filter_transition = transition;
@@ -123,12 +126,14 @@ void FrequencyScale::paint(Painter& painter) {
     draw_filter_ranges(painter, r);
     draw_frequency_ticks(painter, r);
 
-    const Rect r_cursor{
-        (screen_width / 2 - 2) + cursor_position, r.bottom() - filter_band_height,
-        5, filter_band_height};
-    painter.fill_rectangle(
-        r_cursor,
-        Color::red());
+    if (!live_tuning) {
+        const Rect r_cursor{
+            (screen_width / 2 - 2) + cursor_position, r.bottom() - filter_band_height,
+            5, filter_band_height};
+        painter.fill_rectangle(
+            r_cursor,
+            Color::red());
+    }
 }
 
 void FrequencyScale::clear() {
@@ -145,6 +150,17 @@ void FrequencyScale::draw_frequency_ticks(Painter& painter, const Rect r) {
 
     const Rect tick{r.left() + x_center, r.top(), 1, r.height()};
     painter.fill_rectangle(tick, Theme::getInstance()->bg_darkest->foreground);
+
+    if (channel_filter_offset != 0) {
+        const auto channel_x = x_center +
+                               channel_filter_offset * spectrum_bins / spectrum_sampling_rate;
+        const Rect channel_tick{
+            r.left() + channel_x,
+            r.bottom() - filter_band_height * 2,
+            1,
+            filter_band_height * 2};
+        painter.fill_rectangle(channel_tick, Color::white());
+    }
 
     constexpr int tick_count_max = 4;
     float rough_tick_interval = float(spectrum_sampling_rate) / tick_count_max;
@@ -186,7 +202,8 @@ void FrequencyScale::draw_frequency_ticks(Painter& painter, const Rect r) {
 
 void FrequencyScale::draw_filter_ranges(Painter& painter, const Rect r) {
     if (channel_filter_low_frequency != channel_filter_high_frequency) {
-        const auto x_center = r.width() / 2;
+        const auto x_center = r.width() / 2 +
+                              channel_filter_offset * spectrum_bins / spectrum_sampling_rate;
 
         const auto x_low = x_center + channel_filter_low_frequency * spectrum_bins / spectrum_sampling_rate;
         const auto x_high = x_center + channel_filter_high_frequency * spectrum_bins / spectrum_sampling_rate;
@@ -220,6 +237,11 @@ void FrequencyScale::on_blur() {
 }
 
 bool FrequencyScale::on_encoder(const EncoderEvent delta) {
+    if (live_tuning) {
+        if (on_select) on_select(delta);
+        return true;
+    }
+
     cursor_position += delta;
 
     cursor_position = std::min<int32_t>(cursor_position, screen_width / 2 - 1);
@@ -326,9 +348,11 @@ WaterfallView::WaterfallView(const bool cursor) {
         frequency_scale.focus();  // focus on frequency scale to show cursor
 
         if (sampling_rate) {
-            // screen x to frequency scale x, NB we need two widgets align
-            int32_t cursor_position = x - (screen_width / 2);
-            frequency_scale.set_cursor_position(cursor_position);
+            const int32_t cursor_position = x - (screen_width / 2);
+            if (!frequency_scale.is_live_tuning()) {
+                // screen x to frequency scale x, NB we need two widgets align
+                frequency_scale.set_cursor_position(cursor_position);
+            }
         }
     };
 
@@ -405,6 +429,7 @@ void WaterfallView::on_channel_spectrum(const ChannelSpectrum& spectrum) {
     sampling_rate = spectrum.sampling_rate;
     frequency_scale.set_spectrum_sampling_rate(sampling_rate);
     frequency_scale.set_channel_filter(
+        spectrum.channel_filter_offset,
         spectrum.channel_filter_low_frequency,
         spectrum.channel_filter_high_frequency,
         spectrum.channel_filter_transition);

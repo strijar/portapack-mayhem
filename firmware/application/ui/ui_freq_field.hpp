@@ -39,6 +39,7 @@ class BoundFrequencyField : public FrequencyField {
 
    public:
     decltype(FrequencyField::on_change) updated{};
+    std::function<bool(rf::Frequency)> changing{};
 
     BoundFrequencyField(Point parent_pos, NavigationView& nav)
         : FrequencyField(parent_pos) {
@@ -47,7 +48,8 @@ class BoundFrequencyField : public FrequencyField {
         set_value(model->target_frequency());
 
         on_change = [this](rf::Frequency f) {
-            model->set_target_frequency(f);
+            if (!changing || !changing(f))
+                model->set_target_frequency(f);
             if (updated)
                 updated(f);
         };

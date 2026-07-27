@@ -40,6 +40,9 @@ class SpectrumCollector {
     void on_message(const Message* const message);
 
     void set_decimation_factor(const size_t decimation_factor);
+    void set_channel_filter_offset(const int32_t offset) {
+        channel_filter_offset = offset;
+    }
 
     void feed(
         const buffer_c16_t& channel,
@@ -59,6 +62,7 @@ class SpectrumCollector {
     int32_t channel_filter_low_frequency{0};
     int32_t channel_filter_high_frequency{0};
     int32_t channel_filter_transition{0};
+    int32_t channel_filter_offset{0};
 
     void post_message(const buffer_c16_t& data);
 

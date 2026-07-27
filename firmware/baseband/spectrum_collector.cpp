@@ -136,6 +136,7 @@ void SpectrumCollector::update() {
 
         ChannelSpectrum spectrum;
         spectrum.sampling_rate = channel_spectrum_sampling_rate;
+        spectrum.channel_filter_offset = channel_filter_offset;
         spectrum.channel_filter_low_frequency = channel_filter_low_frequency;
         spectrum.channel_filter_high_frequency = channel_filter_high_frequency;
         spectrum.channel_filter_transition = channel_filter_transition;

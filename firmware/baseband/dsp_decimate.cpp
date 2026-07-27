@@ -289,6 +289,42 @@ buffer_c16_t FIRC8xR16x24FS4Decim8::execute(
         src.sampling_rate / decimation_factor};
 }
 
+buffer_c16_t SparseFIRC8Decim4::execute(
+    const buffer_c8_t& src,
+    const buffer_c16_t& dst) {
+    const size_t output_samples = src.count / 4;
+    const auto* src_p = src.p;
+    void* dst_p = dst.p;
+
+    for (size_t output = 0; output < output_samples; ++output) {
+        for (size_t i = 0; i < 4; ++i) {
+            const auto sample_i = src_p->real();
+            const auto sample_q = src_p->imag();
+            ++src_p;
+            samples_i_[samples_head_] = samples_i_[samples_head_ + taps_count_] = sample_i;
+            samples_q_[samples_head_] = samples_q_[samples_head_ + taps_count_] = sample_q;
+            if (++samples_head_ == taps_count_)
+                samples_head_ = 0;
+        }
+
+        int32_t real = 0;
+        int32_t imag = 0;
+        for (size_t i = 0; i < taps_count_; i += 2) {
+            const void* sample_i_p = &samples_i_[samples_head_ + i];
+            const void* sample_q_p = &samples_q_[samples_head_ + i];
+            const void* taps_p = &taps_[i];
+            const auto taps = *__SIMD32(taps_p);
+            real = __SMLAD(*__SIMD32(sample_i_p), taps, real);
+            imag = __SMLAD(*__SIMD32(sample_q_p), taps, imag);
+        }
+
+        *__SIMD32(dst_p)++ = scale_round_and_pack(
+            {real, imag}, c8_to_c32_sat_scalar);
+    }
+
+    return {dst.p, output_samples, src.sampling_rate / 4};
+}
+
 // FIRC16xR16x16Decim2 ////////////////////////////////////////////////////
 
 void FIRC16xR16x16Decim2::configure(
@@ -625,10 +661,13 @@ buffer_s16_t FIR64AndDecimateBy2Real::execute(
 void FIRAndDecimateComplex::configure_common(
     const size_t taps_count,
     const size_t decimation_factor) {
-    samples_ = std::make_unique<samples_t>(taps_count);
+    /* Mirror the delay line so a convolution always sees one contiguous
+     * taps_count window, even when the logical head wraps. */
+    samples_ = std::make_unique<samples_t>(taps_count * 2);
     taps_reversed_ = std::make_unique<taps_t>(taps_count);
     taps_count_ = taps_count;
     decimation_factor_ = decimation_factor;
+    samples_head_ = 0;
 }
 
 buffer_c16_t FIRAndDecimateComplex::execute(
@@ -647,15 +686,18 @@ buffer_c16_t FIRAndDecimateComplex::execute(
     const void* src_p = src.p;
     size_t outer_count = output_samples;
     while (outer_count > 0) {
-        /* Put new samples into delay buffer */
-        void* z_new_p = &samples_[taps_count_ - decimation_factor_];
+        /* Put new samples into both halves of the mirrored ring. */
         for (size_t i = 0; i < decimation_factor_; i++) {
-            *__SIMD32(z_new_p)++ = *__SIMD32(src_p)++;
+            const uint32_t sample = *__SIMD32(src_p)++;
+            *reinterpret_cast<uint32_t*>(&samples_[samples_head_]) = sample;
+            *reinterpret_cast<uint32_t*>(&samples_[samples_head_ + taps_count_]) = sample;
+            if (++samples_head_ == taps_count_)
+                samples_head_ = 0;
         }
 
         size_t loop_count = taps_count_ / 8;
         void* t_p = &taps_reversed_[0];
-        void* z_p = &samples_[0];
+        void* z_p = &samples_[samples_head_];
 
         int64_t t_real = 0;
         int64_t t_imag = 0;
@@ -712,31 +754,45 @@ buffer_c16_t FIRAndDecimateComplex::execute(
             i_sat,
             16);
 
-        /* Shift sample buffer left/down by decimation factor. */
-        const size_t unroll_factor = 4;
-        size_t shift_count = (taps_count_ - decimation_factor_) / unroll_factor;
-
-        void* t = &samples_[0];
-        const void* s = &samples_[decimation_factor_];
-
-        while (shift_count > 0) {
-            *__SIMD32(t)++ = *__SIMD32(s)++;
-            *__SIMD32(t)++ = *__SIMD32(s)++;
-            *__SIMD32(t)++ = *__SIMD32(s)++;
-            *__SIMD32(t)++ = *__SIMD32(s)++;
-            shift_count--;
-        }
-
-        shift_count = (taps_count_ - decimation_factor_) % unroll_factor;
-        while (shift_count > 0) {
-            *__SIMD32(t)++ = *__SIMD32(s)++;
-            shift_count--;
-        }
-
         outer_count--;
     }
 
     return result;
+}
+
+buffer_c16_t SparseFIRDecimateBy2::execute(
+    const buffer_c16_t& src,
+    const buffer_c16_t& dst) {
+    const size_t output_samples = src.count / 2;
+    const void* src_p = src.p;
+    void* dst_p = dst.p;
+
+    for (size_t output = 0; output < output_samples; ++output) {
+        for (size_t i = 0; i < 2; ++i) {
+            const uint32_t sample = *__SIMD32(src_p)++;
+            *reinterpret_cast<uint32_t*>(&samples_[samples_head_]) = sample;
+            *reinterpret_cast<uint32_t*>(&samples_[samples_head_ + taps_count_]) = sample;
+            if (++samples_head_ == taps_count_)
+                samples_head_ = 0;
+        }
+
+        int64_t real = 0;
+        int64_t imag = 0;
+        for (size_t i = 0; i < sparse_count_; ++i) {
+            const void* sample_p = &samples_[samples_head_ + indices_[i]];
+            const void* tap_p = &taps_[i];
+            const auto sample = *__SIMD32(sample_p);
+            const auto tap = *__SIMD32(tap_p);
+            real = __SMLSLD(sample, tap, real);
+            imag = __SMLALDX(sample, tap, imag);
+        }
+
+        const int32_t real_sat = __SSAT(real >> 16, 16);
+        const int32_t imag_sat = __SSAT(imag >> 16, 16);
+        *__SIMD32(dst_p)++ = __PKHBT(real_sat, imag_sat, 16);
+    }
+
+    return {dst.p, output_samples, src.sampling_rate / 2};
 }
 
 buffer_s16_t DecimateBy2CIC4Real::execute(

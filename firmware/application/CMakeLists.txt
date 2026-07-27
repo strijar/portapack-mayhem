@@ -281,8 +281,6 @@ set(CPPSRC
 	ui/ui_bmpview.cpp
 	apps/ais_app.cpp
 	apps/analog_audio_app.cpp
-	apps/ble_rx_app.cpp
-	apps/ble_tx_app.cpp
 	apps/capture_app.cpp
 	apps/pocsag_app.cpp
 	apps/ui_about_simple.cpp
@@ -334,6 +332,13 @@ set(CPPSRC
 	ui_external_items_menu_loader.cpp
 	view_factory_base.cpp
 )
+
+if(BUILD_LEGACY_BLE_APPS)
+	list(APPEND CPPSRC
+		apps/ble_rx_app.cpp
+		apps/ble_tx_app.cpp
+	)
+endif()
 
 set_source_files_properties(${CPPSRC} PROPERTIES COMPILE_FLAGS -flto) # Add lto flag to the non-external sources only
 
